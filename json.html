@@ -137,27 +137,32 @@
 
     async function loadState() {
       try {
+        const raw = localStorage.getItem('eaglercraft_saved_state_v1');
+        if (raw) {
+          return { ...FALLBACK_STATE, ...JSON.parse(raw) };
+        }
+      } catch (_) {}
+
+      try {
         const response = await fetch('/saved.json', { cache: 'no-store' });
         if (!response.ok) throw new Error('Saved JSON unavailable');
         const json = await response.json();
         return { ...FALLBACK_STATE, ...json };
       } catch (err) {
-        try {
-          const raw = localStorage.getItem('eaglercraft_saved_state_v1');
-          if (!raw) return { ...FALLBACK_STATE };
-          return { ...FALLBACK_STATE, ...JSON.parse(raw) };
-        } catch (_) {
-          return { ...FALLBACK_STATE };
-        }
+        return { ...FALLBACK_STATE };
       }
     }
 
     async function refresh() {
       const state = await loadState();
       document.getElementById('jsonOutput').value = JSON.stringify(state, null, 2);
-      document.getElementById('status').textContent = 'Loaded from /saved.json';
+      document.getElementById('status').textContent = 'Loaded from local storage / saved.json';
       document.getElementById('status').classList.remove('error');
     }
+
+    window.addEventListener('storage', () => {
+      refresh();
+    });
 
     document.getElementById('refreshBtn').addEventListener('click', refresh);
     document.getElementById('saveBtn').addEventListener('click', async () => {

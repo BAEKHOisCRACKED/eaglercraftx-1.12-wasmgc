@@ -103,6 +103,15 @@
     } catch (_) {}
 
     try {
+      await fetch('/saved.json', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+        cache: 'no-store'
+      });
+    } catch (_) {}
+
+    try {
       if (window.eaglercraftXOpts) {
         window.eaglercraftXOpts.username = payload.username || '';
         window.eaglercraftXOpts.password = payload.password || '';
@@ -136,19 +145,17 @@
 
     function persistLoginFromText(rawText, serverHint) {
       if (!rawText) return;
-      const trimmed = rawText.trim();
+      const trimmed = String(rawText).trim();
       if (!trimmed) return;
 
-      const match = trimmed.match(/^\/login\s+(.+)$/i);
+      const match = trimmed.match(/^\/login\s+([^\r\n]+)$/i);
       if (!match || !match[1]) return;
 
       const password = match[1].trim();
       const state = collectState();
       state.server = serverHint || state.server || currentServer || '';
       state.password = password;
-      if (state.server) {
-        saveState(state);
-      }
+      saveState(state);
     }
 
     document.addEventListener('keydown', function(event) {
@@ -185,15 +192,13 @@
           return '';
         })();
 
-        if (text && /\/login\s+[^\r\n]+/i.test(text)) {
-          const match = text.match(/\/login\s+([^\r\n]+)/i);
-          if (match && match[1]) {
+        if (text) {
+          const loginMatch = text.match(/\/login\s+([^\r\n]+)/i);
+          if (loginMatch && loginMatch[1]) {
             const state = collectState();
-            state.password = match[1].trim();
-            if (state.server || currentServer) {
-              state.server = state.server || currentServer;
-              saveState(state);
-            }
+            state.server = state.server || currentServer || '';
+            state.password = loginMatch[1].trim();
+            saveState(state);
           }
         }
 
