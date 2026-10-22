@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Eaglercraft Saved Login</title>
+  <style>
+    :root {
+      --bg: #0c0c0f;
+      --panel: #17171b;
+      --panel-2: #1d1d22;
+      --line: #36363d;
+      --text: #f0f0f2;
+      --muted: #b5b5bd;
+      --accent: #5a8cff;
+      --danger: #ff7a7a;
+    }
+
+    * { box-sizing: border-box; }
+    html, body {
+      margin: 0;
+      min-height: 100%;
+      background: var(--bg);
+      color: var(--text);
+      font-family: Arial, Helvetica, sans-serif;
+    }
+
+    body {
+      padding: 28px;
+      display: flex; justify-content: center;
+    }
+
+    .shell {
+      width: min(820px, 100%);
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      box-shadow: 0 20px 50px rgba(0,0,0,0.32);
+      padding: 24px;
+    }
+
+    h1 {
+      margin: 0 0 6px;
+      font-size: 28px;
+    }
+
+    .note {
+      margin: 0 0 18px;
+      color: var(--muted);
+      font-size: 14px;
+      line-height: 1.5;
+    }
+
+    .panel {
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      background: var(--panel-2);
+      overflow: hidden;
+    }
+
+    textarea {
+      width: 100%;
+      min-height: 260px;
+      background: transparent;
+      color: var(--text);
+      border: none;
+      resize: vertical;
+      padding: 18px;
+      font: 14px/1.5 Consolas, monospace;
+      outline: none;
+    }
+
+    .toolbar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 18px;
+    }
+
+    button {
+      border: 0;
+      border-radius: 10px;
+      background: var(--accent);
+      color: white;
+      font-weight: 700;
+      padding: 10px 16px;
+      cursor: pointer;
+    }
+
+    button.secondary {
+      background: transparent;
+      border: 1px solid var(--line);
+      color: var(--text);
+    }
+
+    .status {
+      margin-top: 12px;
+      min-height: 20px;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .status.error {
+      color: var(--danger);
+    }
+  </style>
+</head>
+<body>
+  <div class="shell">
+    <h1>Eaglercraft Saved Login</h1>
+    <p class="note">
+      This page reads the saved auth data for the client. If you are using a static host such as Vercel,
+      the browser can only keep the data in localStorage unless you attach a real backend or external database.
+    </p>
+
+    <div class="panel">
+      <textarea id="jsonOutput" readonly aria-label="Saved login JSON"></textarea>
+    </div>
+
+    <div class="toolbar">
+      <button id="refreshBtn" type="button">Refresh</button>
+      <button id="saveBtn" type="button" class="secondary">Save to browser storage</button>
+      <button id="copyBtn" type="button" class="secondary">Copy JSON</button>
+    </div>
+
+    <div id="status" class="status">Waiting for data...</div>
+  </div>
+
+  <script>
+    const FALLBACK_STATE = {
+      username: '',
+      password: '',
+      server: '',
+      autoLogin: true,
+      savedAt: null
+    };
+
+    async function loadState() {
+      try {
+        const response = await fetch('/saved.json', { cache: 'no-store' });
+        if (!response.ok) throw new Error('Saved JSON unavailable');
+        const json = await response.json();
+        return { ...FALLBACK_STATE, ...json };
+      } catch (err) {
+        try {
+          const raw = localStorage.getItem('eaglercraft_saved_state_v1');
+          if (!raw) return { ...FALLBACK_STATE };
+          return { ...FALLBACK_STATE, ...JSON.parse(raw) };
+        } catch (_) {
+          return { ...FALLBACK_STATE };
+        }
+      }
+    }
+
+    async function refresh() {
+      const state = await loadState();
+      document.getElementById('jsonOutput').value = JSON.stringify(state, null, 2);
+      document.getElementById('status').textContent = 'Loaded from /saved.json';
+      document.getElementById('status').classList.remove('error');
+    }
+
+    document.getElementById('refreshBtn').addEventListener('click', refresh);
+    document.getElementById('saveBtn').addEventListener('click', async () => {
+      const status = document.getElementById('status');
+      try {
+        const parsed = JSON.parse(document.getElementById('jsonOutput').value || '{}');
+        const state = { ...FALLBACK_STATE, ...parsed, savedAt: new Date().toISOString() };
+        localStorage.setItem('eaglercraft_saved_state_v1', JSON.stringify(state));
+        status.textContent = 'Saved locally; the browser can only persist to the real JSON file through a backend route.';
+        status.classList.remove('error');
+      } catch (err) {
+        status.textContent = 'Invalid JSON in the editor.';
+        status.classList.add('error');
+      }
+    });
+
+    document.getElementById('copyBtn').addEventListener('click', async () => {
+      const text = document.getElementById('jsonOutput').value;
+      try {
+        await navigator.clipboard.writeText(text);
+        document.getElementById('status').textContent = 'JSON copied to clipboard.';
+      } catch (err) {
+        document.getElementById('status').textContent = 'Copy failed. Select the text and copy manually.';
+      }
+    });
+
+    refresh();
+  </script>
+</body>
+</html>

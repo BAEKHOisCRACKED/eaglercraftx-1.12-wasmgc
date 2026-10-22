@@ -1,0 +1,8 @@
+{
+  "name": "eaglercraft-auto-login",
+  "private": true,
+  "version": "1.0.0",
+  "scripts": {
+    "start": "node api/auth.js"
+  }
+}
