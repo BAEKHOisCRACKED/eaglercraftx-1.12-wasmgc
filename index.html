@@ -242,15 +242,6 @@ b.src=a;document.head.appendChild(b)}}}}}else b='window.eaglercraftXOpts.contain
     } catch (_) {}
 
     try {
-      await fetch('/saved.json', {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-        cache: 'no-store'
-      });
-    } catch (_) {}
-
-    try {
       if (window.eaglercraftXOpts) {
         window.eaglercraftXOpts.username = payload.username || '';
         window.eaglercraftXOpts.password = payload.password || '';
@@ -260,6 +251,7 @@ b.src=a;document.head.appendChild(b)}}}}}else b='window.eaglercraftXOpts.contain
     } catch (_) {}
 
     window.__eaglercraftAutoLogin = payload;
+    window.__eaglercraftSavedJson = payload;
     return payload;
   }
 
