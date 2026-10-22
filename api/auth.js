@@ -9,6 +9,33 @@ const defaultState = {
   savedAt: null
 };
 
+function parsePayload(rawBody) {
+  const text = (rawBody || '').toString().trim();
+  if (!text) return {};
+
+  try {
+    const parsed = JSON.parse(text);
+    if (parsed && typeof parsed === 'object') return parsed;
+  } catch (_) {}
+
+  try {
+    const obj = {};
+    for (const pair of text.split(/[&;]/)) {
+      if (!pair) continue;
+      const idx = pair.indexOf('=');
+      const key = idx >= 0 ? decodeURIComponent(pair.slice(0, idx)) : decodeURIComponent(pair);
+      const value = idx >= 0 ? decodeURIComponent(pair.slice(idx + 1)) : '';
+      if (key) obj[key] = value;
+    }
+    if (Object.keys(obj).length) return obj;
+  } catch (_) {}
+
+  const cleaned = text.replace(/^\/login\s+/i, '').trim();
+  if (cleaned) return { password: cleaned };
+
+  return {};
+}
+
 function getAuthFilePath() {
   return path.join(process.cwd(), 'data', 'auth.json');
 }
@@ -61,7 +88,7 @@ module.exports = async function handler(req, res) {
         body += chunk;
       }
 
-      const parsed = body ? JSON.parse(body) : {};
+      const parsed = parsePayload(body);
       const state = writeState(parsed);
       return res.status(200).json({ ok: true, data: state });
     } catch (err) {
