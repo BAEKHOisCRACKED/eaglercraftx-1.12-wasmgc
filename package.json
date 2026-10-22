@@ -3,6 +3,6 @@
   "private": true,
   "version": "1.0.0",
   "scripts": {
-    "start": "node api/auth.js"
+    "start": "node api/save.js"
   }
 }

